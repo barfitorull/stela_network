@@ -1,0 +1,92 @@
+{
+  "project_info": {
+    "project_number": "496934996329",
+    "firebase_url": "https://stela-network-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "stela-network",
+    "storage_bucket": "stela-network.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:496934996329:android:18f215208832cb45e095f8",
+        "android_client_info": {
+          "package_name": "com.example.stela_network"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "496934996329-854r4umtkbu3ftvfn3uf260j5ffh8f8o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.stela_network",
+            "certificate_hash": "c5bffed3fd303cbeb9d7f353c040869bd8da956f"
+          }
+        },
+        {
+          "client_id": "496934996329-t3ge3v0cebi566l3sf8nasdln27qvnp7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAn_gvUTDbTEsrpOz9mSnEI9zqsCvYyD24"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "496934996329-t3ge3v0cebi566l3sf8nasdln27qvnp7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "496934996329-han5gc1k8f8pmjikr35gd2iq1a8spjcf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "stela.network.ios"
+              }
+            }
+          ]
+        }
+      },
+      "admob_app_id": "ca-app-pub-6928170513581809~2194476892"
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:496934996329:android:267e5d961187966be095f8",
+        "android_client_info": {
+          "package_name": "com.stelanetwork.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "496934996329-t3ge3v0cebi566l3sf8nasdln27qvnp7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAn_gvUTDbTEsrpOz9mSnEI9zqsCvYyD24"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "496934996329-t3ge3v0cebi566l3sf8nasdln27qvnp7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "496934996329-han5gc1k8f8pmjikr35gd2iq1a8spjcf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "stela.network.ios"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
