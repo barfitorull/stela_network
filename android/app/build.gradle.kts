@@ -6,8 +6,8 @@ plugins {
 }
 
 android {
-    namespace = "com.example.stela_network"
-    compileSdk = 35
+    namespace = "com.stelanetwork.app"
+    compileSdk = 36
     ndkVersion = "27.0.12077973" // <-- versiunea corectă NDK
 
     compileOptions {
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.stela_network"
+        applicationId = "com.stelanetwork.app"
         minSdk = flutter.minSdkVersion
         targetSdk = 35
         versionCode = flutter.versionCode

@@ -16,6 +16,7 @@ import 'language_screen.dart';
 import 'about_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'debug_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -1178,7 +1179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Force navigation to login screen
                 if (context.mounted) {
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(builder: (context) => const LoginScreen(cameFromLogout: true)),
                     (route) => false,
                   );
                 }
@@ -1277,7 +1278,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'My Team: ${provider.totalReferrals ?? 0}/${provider.activeReferrals}',
+              'My Team: ${provider.activeReferrals}/${provider.totalReferrals ?? 0}',
               style: TextStyle(
                 color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
                 fontSize: 14,
@@ -1326,12 +1327,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Text('Add Referral Code'),
             ),
           ] else ...[
-            Text(
-              'Referred by: ${provider.referredBy}',
-              style: TextStyle(
-                color: Colors.green,
-                fontSize: 14,
+            FutureBuilder<DocumentSnapshot?>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .where('referralCode', isEqualTo: provider.referredBy)
+                  .limit(1)
+                  .get()
+                  .then((querySnapshot) => querySnapshot.docs.isNotEmpty 
+                      ? querySnapshot.docs.first.reference.get() 
+                      : null),
+              builder: (context, snapshot) {
+                String referrerDisplay = provider.referredBy!;
+                
+                if (snapshot.hasData && snapshot.data != null) {
+                  final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                  if (userData != null && userData['username'] != null) {
+                    referrerDisplay = '${provider.referredBy} - ${userData['username']}';
+                  } else if (userData != null && userData['email'] != null) {
+                    // Fallback to email if username doesn't exist (for old accounts)
+                    referrerDisplay = '${provider.referredBy} - ${userData['email']}';
+                  }
+                }
+                
+                return Text(
+                  'Referred by: $referrerDisplay',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 14,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            // DEBUG: Add debug button
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DebugScreen(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
+              child: const Text('DEBUG: Open Debug Screen'),
             ),
           ],
         ],
@@ -1396,24 +1442,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   try {
                     await provider.addReferralCode(code);
                     Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Referral code added: $code',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                    
+                    // CRITICAL: Force UI rebuild after successful referral code addition
+                    if (context.mounted) {
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '✅ Referral code added successfully: $code\n🎁 +10 STC bonus applied!',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 3),
                         ),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                      );
+                      
+                      // Force rebuild of the profile screen
+                      setState(() {});
+                    }
                   } catch (e) {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Error: $e',
+                          '❌ Error: ${e.toString()}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,

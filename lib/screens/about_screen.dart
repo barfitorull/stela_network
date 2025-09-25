@@ -113,7 +113,7 @@ class AboutScreen extends StatelessWidget {
                             const SizedBox(height: 20),
                             _buildInfoRow('App Name', 'Stela Network'),
                             const SizedBox(height: 8),
-                            _buildInfoRow('Version', 'v 1.0.2'),
+                            _buildInfoRow('Version', 'v 1.0.3'),
                             const SizedBox(height: 8),
                             _buildInfoRow('Build', '2025.1.1'),
                             const SizedBox(height: 8),

@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:stela_network/providers/mining_provider.dart';
 import 'package:stela_network/providers/theme_provider.dart';
+import 'package:stela_network/providers/admin_provider.dart';
 import 'package:stela_network/services/admob_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'admin_login_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
@@ -23,6 +25,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _rotationController;
   late AnimationController _pulseController;
   bool _isTeamExpanded = false;
+  
+  // Admin access
+  int _adminTapCount = 0;
+  Timer? _adminTapTimer;
 
   @override
   void initState() {
@@ -39,6 +45,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     // Load ads
     _loadAds();
+    
+    // Start periodic refresh for team data
+    _startTeamDataRefreshTimer();
     
     // Load initial team data after a short delay to ensure provider is ready
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -63,9 +72,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _cooldownTimer?.cancel();
+    _adminTapTimer?.cancel();
     _rotationController.dispose();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  // Admin access function
+  void _handleAdminTap() {
+    _adminTapCount++;
+    _adminTapTimer?.cancel();
+    
+    if (_adminTapCount >= 7) {
+      // Open admin login
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+      );
+      _adminTapCount = 0;
+    } else {
+      // Reset counter after 3 seconds
+      _adminTapTimer = Timer(const Duration(seconds: 3), () {
+        _adminTapCount = 0;
+      });
+    }
   }
 
   void _startCooldownTimer() {
@@ -74,6 +103,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           // This will trigger rebuild and update countdown
         });
+      }
+    });
+  }
+
+  void _startTeamDataRefreshTimer() {
+    // Refresh team data every 3 seconds for real-time updates
+    Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        final provider = Provider.of<MiningProvider>(context, listen: false);
+        if (provider.referralCode != null) {
+          _forceRefreshTeamData(provider.referralCode!);
+        }
       }
     });
   }
@@ -111,6 +152,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  // Force refresh team data (clear cache and reload)
+  void _forceRefreshTeamData(String referralCode) async {
+    _teamMembersCache.remove(referralCode);
+    _cacheTimestamps.remove(referralCode);
+    
+    // Load fresh data
+    await _loadTeamMembers(referralCode);
+    
+    if (mounted) {
+      setState(() {}); // Trigger rebuild
+    }
+  }
+
   // Cache for team members to avoid repeated queries
   Map<String, List<Map<String, dynamic>>> _teamMembersCache = {};
   Map<String, DateTime> _cacheTimestamps = {};
@@ -119,11 +173,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<List<Map<String, dynamic>>> _loadTeamMembers(String referralCode) async {
     if (referralCode.isEmpty) return [];
     
-    // Check cache first (cache for 30 seconds)
+    // Check cache first (cache for 2 seconds for real-time updates)
     final now = DateTime.now();
     if (_teamMembersCache.containsKey(referralCode)) {
       final cacheTime = _cacheTimestamps[referralCode];
-      if (cacheTime != null && now.difference(cacheTime).inSeconds < 30) {
+      if (cacheTime != null && now.difference(cacheTime).inSeconds < 2) {
         return _teamMembersCache[referralCode]!;
       }
     }
@@ -139,21 +193,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       for (final doc in querySnapshot.docs) {
         final data = doc.data();
         final email = data['email'] as String? ?? 'Unknown';
+        final username = data['username'] as String? ?? 'Unknown';
         final isMining = data['isMining'] as bool? ?? false;
         final lastMiningUpdate = data['lastMiningUpdate'] as int?;
         final lastAppActivity = data['lastAppActivity'] as int?;
         
-        // Determine if member is active (mining in last 24h or app activity in last 7 days)
-        final now = DateTime.now().millisecondsSinceEpoch;
-        final isActive = isMining || 
-                        (lastMiningUpdate != null && (now - lastMiningUpdate) < 24 * 60 * 60 * 1000) ||
-                        (lastAppActivity != null && (now - lastAppActivity) < 7 * 24 * 60 * 60 * 1000);
+        // Determine if member is active (currently mining)
+        final isActive = isMining;
+        
+        // Create display name: email - username
+        final displayName = '$email - $username';
         
         teamMembers.add({
           'email': email,
+          'username': username,
+          'displayName': displayName,
           'isActive': isActive,
         });
       }
+      
+      // CRITICAL: Update provider with local activeReferrals and totalReferrals count
+      final provider = Provider.of<MiningProvider>(context, listen: false);
+      final activeCount = teamMembers.where((member) => member['isActive'] == true).length;
+      final totalCount = teamMembers.length;
+      provider.updateReferralsFromTeam(activeCount, totalCount);
+      
       
       // Cache the result
       _teamMembersCache[referralCode] = teamMembers;
@@ -336,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildInfoItem('Mining Rate', '${provider.miningRate.toStringAsFixed(2)} STC/hr'),
-              _buildInfoItem('Active Referrals', '${provider.activeReferrals}'),
+              _buildInfoItem('Active Referrals', '${provider.activeReferrals}/${provider.totalReferrals}'),
             ],
           ),
         ],
@@ -922,10 +986,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               angle: _rotationController.value * 2 * 3.14159,
               child: Transform.scale(
                 scale: 0.9 + (_pulseController.value * 0.1),
-                child: const Image(
-                  image: AssetImage('assets/stela_app_logo.png'),
-                  width: 100,
-                  height: 100,
+                child: GestureDetector(
+                  onTap: _handleAdminTap,
+                  child: const Image(
+                    image: AssetImage('assets/stela_app_logo.png'),
+                    width: 100,
+                    height: 100,
+                  ),
                 ),
               ),
             );
@@ -1172,7 +1239,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Expanded(
                   child: Text(
-                    member['email'] as String,
+                    member['displayName'] as String? ?? member['email'] as String,
                     style: TextStyle(
                       color: themeProvider.isDarkMode ? Colors.white70 : Colors.black,
                       fontSize: 12,

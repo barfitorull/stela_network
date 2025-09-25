@@ -68,7 +68,7 @@ class MiningProvider with ChangeNotifier {
 
   // Constants - pot fi ajustate
   static const int maxBoostersPerSession = 10; // Numărul maxim de boostere ce pot fi folosite într-o sesiune
-  static const Duration sessionDuration = Duration(minutes: 5); // TEMPORAR PENTRU TESTE - 5 minute
+  static const Duration sessionDuration = Duration(hours: 24); // 24 ore - versiunea finală
   static const Duration cooldownDuration = Duration(hours: 2); // Durata cooldown-ului (dacă se implementează)
 
   // Constructor
@@ -374,15 +374,17 @@ class MiningProvider with ChangeNotifier {
           }
         }
         
-        // Handle referral code
+        // Handle referral code - CRITICAL FIX: NEVER generate new codes for existing users
         String? loadedReferralCode = data['referralCode'] as String?;
-        if (loadedReferralCode != null) {
+        if (loadedReferralCode != null && loadedReferralCode.isNotEmpty) {
           _referralCode = loadedReferralCode;
           debugPrint('🎯 Using existing referral code: $_referralCode');
         } else {
-          // CRITICAL FIX: Don't generate referral code automatically
+          // CRITICAL FIX: DO NOT generate new referral codes here
+          // This prevents referral code regeneration on app reinstall
           _referralCode = null;
-          debugPrint('🎯 No referral code found - user needs to generate one manually');
+          debugPrint('⚠️ No referral code found in Firestore - keeping null to prevent regeneration');
+          debugPrint('⚠️ Referral codes should only be generated during user registration');
         }
         
         // CRITICAL FIX: If user was referred, ensure bonus is applied immediately
@@ -509,6 +511,10 @@ class MiningProvider with ChangeNotifier {
       'referralCode': _referralCode,
       'referredBy': _referredBy,
       'isMining': _isMining,
+      'notificationSent1': false,
+      'notificationSent2': false,
+      'notificationSent3': false,
+      'notificationSent4': false,
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
@@ -535,7 +541,13 @@ class MiningProvider with ChangeNotifier {
           }
         }
         
-        await _firestore.collection('users').doc(_currentUserId!).set(dataToSave, SetOptions(merge: true));
+        // CRITICAL FIX: Remove critical fields that should NEVER be overwritten
+        final updateData = Map<String, dynamic>.from(dataToSave);
+        updateData.remove('referredBy'); // Never overwrite referral relationships
+        updateData.remove('referralCode'); // Never overwrite existing referral codes
+        updateData.remove('createdAt'); // Never overwrite creation date
+        
+        await _firestore.collection('users').doc(_currentUserId!).set(updateData, SetOptions(merge: true));
       }
       debugPrint('✅ User data saved successfully');
     } catch (e, s) {
@@ -544,12 +556,17 @@ class MiningProvider with ChangeNotifier {
     }
   }
 
-  // Generează un cod de referral aleatoriu
+  // Generează un cod de referral aleatoriu - DOAR pentru utilizatori noi
   String _generateReferralCode() {
     const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     Random rnd = Random();
-    return String.fromCharCodes(Iterable.generate(
+    String code = String.fromCharCodes(Iterable.generate(
         6, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
+    
+    debugPrint('🎯 CRITICAL: Generating referral code: $code');
+    debugPrint('🎯 WARNING: This should ONLY happen during user registration!');
+    
+    return code;
   }
 
 
@@ -688,6 +705,10 @@ class MiningProvider with ChangeNotifier {
     
     // CRITICAL FIX: Update lastMiningUpdate to current time when stopping
     _lastMiningUpdate = DateTime.now();
+    
+    // CRITICAL FIX: Reset boosters when stopping mining session
+    _boostersUsedThisSession = 0;
+    debugPrint('🚀 Boosters reset to 0 when stopping mining session');
     
     await _saveUserData();
     
@@ -1088,12 +1109,78 @@ class MiningProvider with ChangeNotifier {
       // Wait a moment to ensure UI updates
       await Future.delayed(const Duration(milliseconds: 100));
       
-      // Now reload data from Firestore
-      await _loadUserData(_currentUserId!);
+      // Now reload data from Firestore with server source to bypass cache
+      await _loadUserDataFromServer(_currentUserId!);
       
       debugPrint('✅ FORCE REFRESH: User data reloaded successfully');
     } catch (e) {
       debugPrint('❌ FORCE REFRESH: Error reloading user data: $e');
+    }
+  }
+
+  // CRITICAL: Load user data from server with cache bypass
+  Future<void> _loadUserDataFromServer(String userId) async {
+    debugPrint('🔄 Loading data from server for user: $userId');
+    
+    try {
+      // CRITICAL: Force reload from server to bypass all cache
+      final doc = await _firestore.collection('users').doc(userId).get(const GetOptions(source: Source.server));
+      
+      if (doc.exists) {
+        final data = doc.data()!;
+        debugPrint('✅ Server data found for user: $userId');
+        debugPrint('📊 Server data: $data');
+        
+        // Load ALL data from server to ensure complete sync
+        _balance = (data['balance'] ?? 0.0).toDouble();
+        _baseMiningRate = (data['baseMiningRate'] ?? 0.20).toDouble();
+        _miningRate = (data['miningRate'] ?? _baseMiningRate).toDouble();
+        
+        int boostersRemainingFromDb = (data['boostersRemaining'] ?? maxBoostersPerSession) as int;
+        _boostersUsedThisSession = maxBoostersPerSession - boostersRemainingFromDb;
+        
+        _activeAdBoosts = (data['activeAdBoosts'] ?? 0) as int;
+        _activeReferrals = (data['activeReferrals'] ?? 0) as int;
+        _totalReferrals = (data['totalReferrals'] ?? 0) as int;
+        _totalMiningSessions = (data['totalMiningSessions'] ?? 0) as int;
+        
+        _sessionStartTime = data['sessionStartTime'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(data['sessionStartTime'])
+            : null;
+        _lastMiningUpdate = data['lastMiningUpdate'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(data['lastMiningUpdate'])
+            : null;
+        _lastBoosterTime = data['lastBoosterTime'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(data['lastBoosterTime'])
+            : null;
+        _createdAt = data['createdAt'] != null
+            ? (data['createdAt'] as Timestamp).toDate()
+            : null;
+        _lastMemberJoined = data['lastMemberJoined'] != null
+            ? (data['lastMemberJoined'] as Timestamp).toDate()
+            : null;
+        
+        _referredBy = data['referredBy'] as String?;
+        _isMining = data['isMining'] ?? false;
+        
+        // CRITICAL: Load referral code from server
+        String? serverReferralCode = data['referralCode'] as String?;
+        if (serverReferralCode != null && serverReferralCode.isNotEmpty) {
+          _referralCode = serverReferralCode;
+          debugPrint('🎯 Server referral code loaded: $_referralCode');
+        } else {
+          debugPrint('⚠️ No referral code found on server');
+        }
+        
+        debugPrint('✅ Server data loaded: balance=$_balance, referredBy=$_referredBy, referralCode=$_referralCode');
+        
+        // Force UI update
+        notifyListeners();
+      } else {
+        debugPrint('❌ No server data found for user: $userId');
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading server data: $e');
     }
   }
 
@@ -1143,6 +1230,32 @@ class MiningProvider with ChangeNotifier {
     } else {
       debugPrint('🎯 NO REFERRAL BONUS NEEDED: Balance is $_balance, Referred by $_referredBy');
     }
+  }
+
+  // Update activeReferrals and totalReferrals from team data (real-time)
+  void updateReferralsFromTeam(int activeCount, int totalCount) {
+    debugPrint('🔄 Updating referrals from team: active=$activeCount, total=$totalCount');
+    _activeReferrals = activeCount;
+    _totalReferrals = totalCount;
+    _calculateMiningRate();
+    notifyListeners();
+    debugPrint('✅ Referrals updated: active=$_activeReferrals, total=$_totalReferrals, MiningRate=$_miningRate');
+  }
+
+  // Debug method for referredBy
+  Future<void> debugReferredBy() async {
+    debugPrint('🔍 DEBUG REFERRED BY:');
+    debugPrint('🔍 Current user ID: $_currentUserId');
+    debugPrint('🔍 Referred by: $_referredBy');
+    debugPrint('🔍 Referral code: $_referralCode');
+    debugPrint('🔍 Balance: $_balance');
+    debugPrint('🔍 Active referrals: $_activeReferrals');
+    debugPrint('🔍 Total referrals: $_totalReferrals');
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
 // SFÂRȘIT PARTEA 2 din 2

@@ -21,16 +21,17 @@ class AdMobService {
   static InterstitialAd? _interstitialAd;
   
   static Future<void> loadInterstitialAd() async {
+    print('🔄 Loading interstitial ad with ID: $interstitialAdUnitId');
     await InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
           _interstitialAd = ad;
-          print('Interstitial ad loaded successfully');
+          print('✅ Interstitial ad loaded successfully');
         },
         onAdFailedToLoad: (error) {
-          print('Interstitial ad failed to load: $error');
+          print('❌ Interstitial ad failed to load: $error');
           _interstitialAd = null;
         },
       ),
@@ -42,9 +43,11 @@ class AdMobService {
     required Function() onAdFailed,
   }) async {
     if (_interstitialAd != null) {
+      print('🔄 Showing interstitial ad for mining');
       _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdDismissedFullScreenContent: (ad) {
           // User watched the entire ad - start mining
+          print('✅ Interstitial ad completed - starting mining');
           onAdCompleted();
           ad.dispose();
           _interstitialAd = null;
@@ -52,7 +55,7 @@ class AdMobService {
           loadInterstitialAd();
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
-          print('Interstitial ad failed to show: $error');
+          print('❌ Interstitial ad failed to show: $error');
           ad.dispose();
           _interstitialAd = null;
           onAdFailed();
@@ -61,7 +64,7 @@ class AdMobService {
 
       await _interstitialAd!.show();
     } else {
-      print('Interstitial ad not loaded');
+      print('❌ Interstitial ad not loaded - calling onAdFailed');
       onAdFailed();
     }
   }
@@ -70,16 +73,17 @@ class AdMobService {
   static RewardedAd? _rewardedAd;
   
   static Future<void> loadRewardedAd() async {
+    print('🔄 Loading rewarded ad with ID: $rewardedAdUnitId');
     await RewardedAd.load(
       adUnitId: rewardedAdUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
           _rewardedAd = ad;
-          print('Rewarded ad loaded successfully');
+          print('✅ Rewarded ad loaded successfully');
         },
         onAdFailedToLoad: (error) {
-          print('Rewarded ad failed to load: $error');
+          print('❌ Rewarded ad failed to load: $error');
           _rewardedAd = null;
         },
       ),
@@ -91,6 +95,7 @@ class AdMobService {
     required Function() onFailed,
   }) async {
     if (_rewardedAd != null) {
+      print('🔄 Showing rewarded ad for booster');
       _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdDismissedFullScreenContent: (ad) {
           ad.dispose();
@@ -99,7 +104,7 @@ class AdMobService {
           loadRewardedAd();
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
-          print('Rewarded ad failed to show: $error');
+          print('❌ Rewarded ad failed to show: $error');
           ad.dispose();
           _rewardedAd = null;
           onFailed();
@@ -109,11 +114,12 @@ class AdMobService {
       _rewardedAd!.show(
         onUserEarnedReward: (ad, reward) {
           // User watched the entire ad - activate booster
+          print('✅ Rewarded ad completed - activating booster');
           onRewarded();
         },
       );
     } else {
-      print('Rewarded ad not loaded');
+      print('❌ Rewarded ad not loaded - calling onFailed');
       onFailed();
     }
   }

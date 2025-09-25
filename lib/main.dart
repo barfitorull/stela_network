@@ -7,9 +7,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'providers/mining_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/admin_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_tabs.dart';
 import 'services/admob_service.dart';
+import 'services/notification_service.dart';
 
 // Simple class to hold auth result for ProxyProvider
 class AuthResult {
@@ -35,13 +37,13 @@ void main() async {
   // Initialize AdMob
   await AdMobService.initialize();
 
+  // Initialize notification service
+  await NotificationService.init();
+
   // Initialize Firebase Messaging
   final messaging = FirebaseMessaging.instance;
   
-  // Enable edge-to-edge for Android 15 compatibility
-  if (Platform.isAndroid) {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  }
+  // Edge-to-edge is now handled in MainActivity.kt for Android 15 compatibility
 
   // Request permission
   NotificationSettings settings = await messaging.requestPermission(
@@ -81,6 +83,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()), // Rămâne neschimbat
+        ChangeNotifierProvider(create: (_) => AdminProvider()), // Admin provider
         // --- BLOCUL MODIFICAT ---
         // MiningProvider este acum responsabil să asculte FirebaseAuth.instance.authStateChanges()
         // și să se actualizeze intern. Se va inițializa în constructor și prin _onAuthStateChanged.

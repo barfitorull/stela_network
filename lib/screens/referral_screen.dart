@@ -174,7 +174,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'My Team: ${widget.totalReferrals}/${widget.activeReferrals}',
+          'My Team: ${widget.activeReferrals}/${widget.totalReferrals}',
           style: TextStyle(
             color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
             fontSize: 14,
