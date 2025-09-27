@@ -21,7 +21,7 @@ workflows:
         script: |
           flutter build ios --release --simulator
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/ios/iphonesimulator/Runner.app
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
     # publishing:
