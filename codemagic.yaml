@@ -17,7 +17,7 @@ workflows:
       - name: Set up signing certificate
         script: |
           PRIVATE_KEY=$(echo "$APP_STORE_CONNECT_PRIVATE_KEY" | tr -d '\n')
-          app-store-connect fetch-signing-files --issuer-id $APP_STORE_CONNECT_ISSUER_ID --key-id $APP_STORE_CONNECT_KEY_IDENTIFIER --private-key "$PRIVATE_KEY" --certificate-key $APPLE_DEVELOPER_CERTIFICATE --certificate-key-password $APPLE_DEVELOPER_CERTIFICATE_PASSWORD --type IOS_APP_STORE --create com.stelanetwork.app
+          app-store-connect fetch-signing-files --issuer-id $APP_STORE_CONNECT_ISSUER_ID --key-id $APP_STORE_CONNECT_KEY_IDENTIFIER --private-key "$PRIVATE_KEY" --type IOS_APP_STORE --create com.stelanetwork.app
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
