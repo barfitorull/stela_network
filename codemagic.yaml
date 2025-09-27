@@ -19,7 +19,7 @@ workflows:
       #     flutter test
       - name: Build ios app for simulator
         script: |
-          flutter build ios --release --simulator
+          flutter build ios --debug --simulator
     artifacts:
       - build/ios/iphonesimulator/Runner.app
       - /tmp/xcodebuild_logs/*.log
