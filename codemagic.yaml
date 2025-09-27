@@ -19,7 +19,8 @@ workflows:
       #     flutter test
       - name: Build ios app for simulator
         script: |
-          flutter build ios --debug --simulator
+          export XCODE_XCCONFIG_FILE=""
+          flutter build ios --debug --simulator --no-codesign
     artifacts:
       - build/ios/iphonesimulator/Runner.app
       - /tmp/xcodebuild_logs/*.log
