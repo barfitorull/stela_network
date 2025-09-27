@@ -1,15 +1,25 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/material.dart';
 
+import 'dart:io';
+
 class AdMobService {
   static String get interstitialAdUnitId {
-    // Real ad unit ID for Stela Network Mining
-    return 'ca-app-pub-6928170513581809/1164482168';
+    // Platform-specific ad unit IDs
+    if (Platform.isIOS) {
+      return 'ca-app-pub-6928170513581809/4887155976'; // iOS Interstitial
+    } else {
+      return 'ca-app-pub-6928170513581809/1164482168'; // Android Interstitial
+    }
   }
 
   static String get rewardedAdUnitId {
-    // Real ad unit ID for Stela Network Booster
-    return 'ca-app-pub-6928170513581809/3834861626';
+    // Platform-specific ad unit IDs
+    if (Platform.isIOS) {
+      return 'ca-app-pub-6928170513581809/2415893549'; // iOS Rewarded
+    } else {
+      return 'ca-app-pub-6928170513581809/3834861626'; // Android Rewarded
+    }
   }
 
   // Initialize AdMob

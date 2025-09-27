@@ -54,5 +54,7 @@
 	</array>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>We use notifications to remind you to mine STC.</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-6928170513581809~6282986366</string>
 </dict>
 </plist>
