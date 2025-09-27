@@ -8,8 +8,8 @@ workflows:
       cocoapods: default
       groups:
         - Stela Team
-    integrations:
-      app_store_connect: codemagic
+    # integrations:
+    #   app_store_connect: codemagic
     scripts:
       - name: Set up keychain to be used for codesigning
         script: |
@@ -33,8 +33,8 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
+    # publishing:
+    #   app_store_connect:
+    #     auth: integration
+    #     submit_to_testflight: true
+    #     submit_to_app_store: false
