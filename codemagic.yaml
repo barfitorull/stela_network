@@ -11,6 +11,15 @@ workflows:
     # integrations:
     #   app_store_connect: codemagic
     scripts:
+      - name: Set up keychain to be used for codesigning
+        script: |
+          keychain initialize
+      - name: Set up signing certificate
+        script: |
+          app-store-connect fetch-signing-files --issuer-id $APP_STORE_CONNECT_ISSUER_ID --key-id $APP_STORE_CONNECT_KEY_IDENTIFIER --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" --type IOS_APP_STORE com.stelanetwork.app
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
       - name: Get Flutter packages
         script: |
           flutter packages pub get
@@ -21,7 +30,7 @@ workflows:
         script: |
           flutter build ipa --release \
             --build-name=1.0.3 \
-            --build-number=$(($(app-store-connect get-latest-build-number "$APP_ID") + 1))
+            --build-number=1
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
