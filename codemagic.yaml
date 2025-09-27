@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: iOS Workflow
+    name: iOS Workflow v2
     max_build_duration: 60
     environment:
       flutter: stable
