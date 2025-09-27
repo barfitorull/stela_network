@@ -1,6 +1,6 @@
 workflows:
-  ios-workflow-v3:
-    name: iOS Workflow Final
+  ios-app-store:
+    name: iOS App Store Build
     max_build_duration: 60
     environment:
       flutter: stable
@@ -8,25 +8,33 @@ workflows:
       cocoapods: default
       groups:
         - Stela Team
-    # integrations:
-    #   app_store_connect: codemagic
+    integrations:
+      app_store_connect: codemagic
     scripts:
+      - name: Set up keychain to be used for codesigning
+        script: |
+          keychain initialize
+      - name: Set up signing certificate
+        script: |
+          PRIVATE_KEY=$(echo "$APP_STORE_CONNECT_PRIVATE_KEY" | tr -d '\n')
+          app-store-connect fetch-signing-files --issuer-id $APP_STORE_CONNECT_ISSUER_ID --key-id $APP_STORE_CONNECT_KEY_IDENTIFIER --private-key "$PRIVATE_KEY" --certificate-key $APPLE_DEVELOPER_CERTIFICATE --certificate-key-password $APPLE_DEVELOPER_CERTIFICATE_PASSWORD --type IOS_APP_STORE com.stelanetwork.app
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-      # - name: Flutter unit tests
-      #   script: |
-      #     flutter test
-      - name: Build ios app for simulator
+      - name: Build ipa for App Store
         script: |
-          export XCODE_XCCONFIG_FILE=""
-          flutter build ios --debug --simulator --no-codesign
+          flutter build ipa --release \
+            --build-name=1.0.3 \
+            --build-number=$(($(app-store-connect get-latest-build-number "$APP_ID") + 1))
     artifacts:
-      - build/ios/iphonesimulator/Runner.app
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
-    # publishing:
-    #   app_store_connect:
-    #     auth: integration
-    #     submit_to_testflight: false
-    #     submit_to_app_store: false
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
