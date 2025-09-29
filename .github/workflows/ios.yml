@@ -33,11 +33,8 @@ jobs:
       env:
         FLUTTER_BUILD_MODE: release
     
-    - name: Upload to App Store Connect
-      uses: apple-actions/app-store-connect@v1
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
       with:
-        app-path: build/ios/ipa/*.ipa
-        issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-        api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
-        api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-        bundle-identifier: com.stelanetwork.app
+        name: ios-app
+        path: build/ios/ipa/*.ipa
