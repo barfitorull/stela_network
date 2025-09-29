@@ -41,5 +41,3 @@ jobs:
         api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
         api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         bundle-identifier: com.stelanetwork.app
-        upload-to-app-store: true
-        upload-to-testflight: false
