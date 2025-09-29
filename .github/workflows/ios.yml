@@ -1,0 +1,45 @@
+name: Build and Deploy iOS App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+    
+    - name: Install dependencies
+      run: flutter pub get
+      
+    - name: Setup iOS
+      run: |
+        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+        sudo xcodebuild -runFirstLaunch
+        sudo gem install cocoapods
+        cd ios && pod install && cd ..
+    
+    - name: Build iOS App
+      run: flutter build ipa --release --build-name=1.0.3 --build-number=4
+      env:
+        FLUTTER_BUILD_MODE: release
+    
+    - name: Upload to App Store Connect
+      uses: apple-actions/upload-app-store@v1
+      with:
+        app-path: build/ios/ipa/*.ipa
+        issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+        api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        bundle-identifier: com.stelanetwork.app
+        upload-to-app-store: true
+        upload-to-testflight: false
