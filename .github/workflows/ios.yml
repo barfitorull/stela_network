@@ -33,13 +33,13 @@ jobs:
         # Skip code signing for now - build without signing
         echo "Skipping code signing setup"
     
-    - name: Build iOS App
-      run: flutter build ipa --release --build-name=1.0.3 --build-number=4
+    - name: Build iOS App for Simulator
+      run: flutter build ios --debug --simulator --build-name=1.0.3 --build-number=4
       env:
-        FLUTTER_BUILD_MODE: release
+        FLUTTER_BUILD_MODE: debug
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: ios-app
-        path: build/ios/ipa/*.ipa
+        path: build/ios/iphonesimulator/*.app
