@@ -26,7 +26,9 @@ jobs:
         sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
         sudo xcodebuild -runFirstLaunch
         sudo gem install cocoapods
-        cd ios && pod install && cd ..
+        cd ios
+        pod install --repo-update
+        cd ..
     
     - name: Setup Code Signing
       run: |
@@ -40,7 +42,10 @@ jobs:
         rm certificate.p12
     
     - name: Build iOS App
-      run: flutter build ipa --release --build-name=1.0.3 --build-number=4
+      run: |
+        flutter clean
+        flutter pub get
+        flutter build ipa --release --build-name=1.0.3 --build-number=4
       env:
         FLUTTER_BUILD_MODE: release
     
