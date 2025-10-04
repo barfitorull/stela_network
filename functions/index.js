@@ -729,7 +729,7 @@ exports.updateReferrerActiveReferrals = functions.https.onCall(async (data, cont
 
 // Check mining sessions every minute and stop expired ones
 exports.checkMiningSessions = functions.pubsub
-  .schedule('every 1 minutes')
+  .schedule('every 120 minutes')
   .timeZone('Etc/UTC')
   .onRun(async (context) => {
     try {
