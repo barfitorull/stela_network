@@ -1,28 +1,18 @@
 workflows:
-  ios-app-store:
-    name: iOS App Store Build
-    max_build_duration: 60
+  ios-release:
+    name: iOS Release Build
     environment:
       flutter: stable
       xcode: latest
-      cocoapods: default
-      groups:
-        - Stela Team
-    # integrations:
-    #   app_store_connect: codemagic
+      ios_signing:
+        provisioning_profiles:
+          - stela_appstore_profile   # numele pus de tine la upload
+        certificates:
+          - stela_distribution_cert  # numele certificatului tău din Codemagic
     scripts:
-      - name: Get Flutter packages
-        script: |
-          flutter packages pub get
-      - name: Build iOS app for simulator
-        script: |
-          flutter build ios --debug --simulator
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Build IPA
+        script: flutter build ipa --release
     artifacts:
-      - build/ios/iphonesimulator/Runner.app
-      - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
-    # publishing:
-    #   app_store_connect:
-    #     auth: integration
-    #     submit_to_testflight: true
-    #     submit_to_app_store: false
+      - build/ios/ipa/*.ipa
