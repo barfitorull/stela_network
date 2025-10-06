@@ -108,8 +108,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _startTeamDataRefreshTimer() {
-    // Refresh team data every 3 seconds for real-time updates
-    Timer.periodic(const Duration(seconds: 3), (timer) {
+    // Refresh team data every 10 minutes for real-time updates
+    Timer.periodic(const Duration(minutes: 10), (timer) {
       if (mounted) {
         final provider = Provider.of<MiningProvider>(context, listen: false);
         if (provider.referralCode != null) {
@@ -177,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final now = DateTime.now();
     if (_teamMembersCache.containsKey(referralCode)) {
       final cacheTime = _cacheTimestamps[referralCode];
-      if (cacheTime != null && now.difference(cacheTime).inSeconds < 2) {
+      if (cacheTime != null && now.difference(cacheTime).inMinutes < 15) {
         return _teamMembersCache[referralCode]!;
       }
     }

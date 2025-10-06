@@ -665,8 +665,8 @@ class MiningProvider with ChangeNotifier {
           // Update live stats - add STC to total mined
           await _updateLiveStatsTotalSTCMined(earnings);
           
-          // Save to Firestore every 1 second (but update UI every 100ms)
-          if (timer.tick % 10 == 0) { // Every 10 ticks = 1 second
+          // Save to Firestore every 1 minute (but update UI every 100ms)
+          if (timer.tick % 600 == 0) { // Every 600 ticks = 1 minute
             await _saveUserData();
           }
           notifyListeners();
