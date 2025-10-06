@@ -12,6 +12,7 @@ import 'screens/login_screen.dart';
 import 'screens/main_tabs.dart';
 import 'services/admob_service.dart';
 import 'services/notification_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 // Simple class to hold auth result for ProxyProvider
 class AuthResult {
@@ -25,6 +26,44 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Handling a background message: ${message.messageId}');
   print('Message data: ${message.data}');
   print('Message notification: ${message.notification?.title}');
+}
+
+// Check for app updates function with UI
+Future<void> checkForUpdates(BuildContext context) async {
+  try {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentVersion = packageInfo.version;
+    
+    // For now, just show the snackbar for version 1.0.3 and below
+    // In a real implementation, you'd check against a server or store API
+    if (currentVersion == '1.0.3' || currentVersion == '1.0.2' || currentVersion == '1.0.1' || currentVersion == '1.0.0') {
+      print('📱 Update available: $currentVersion → 1.0.4');
+      
+      // Show persistent snackbar
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('New version of Stela Network available'),
+            backgroundColor: Colors.green,
+            duration: Duration(days: 365), // Persistent until update
+            action: SnackBarAction(
+              label: 'Update',
+              textColor: Colors.white,
+              onPressed: () {
+                // Open Google Play Store
+                // You can implement this with url_launcher
+                print('Opening Google Play Store...');
+              },
+            ),
+          ),
+        );
+      }
+    } else {
+      print('📱 App is up to date: $currentVersion');
+    }
+  } catch (e) {
+    print('📱 Error checking updates: $e');
+  }
 }
 
 void main() async {
@@ -125,6 +164,15 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    // Check for updates when app starts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkForUpdates(context);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthResult?>(
