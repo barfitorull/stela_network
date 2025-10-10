@@ -25,6 +25,7 @@ class MiningProvider with ChangeNotifier {
   double _miningRate = 0.20; // Rata curentă, poate fi modificată de boostere, referali etc.
   double _baseMiningRate = 0.20; // Rata de bază fără niciun bonus
   int _boostersUsedThisSession = 0; // Numărul de boostere UTILIZATE în sesiunea curentă de minare
+  int _superBoostersUsedThisSession = 0; // Numărul de SUPER boostere UTILIZATE în sesiunea curentă de minare
   int _activeAdBoosts = 0; // Numărul de boost-uri active provenite din vizionarea reclamelor (dacă e o logică separată)
   int _activeReferrals = 0; // Numărul de utilizatori referiți care sunt activi
   int _totalReferrals = 0; // Numărul total de utilizatori referiți
@@ -49,6 +50,7 @@ class MiningProvider with ChangeNotifier {
   double get miningRate => _miningRate;
   double get baseMiningRate => _baseMiningRate;
   int get boostersUsedThisSession => _boostersUsedThisSession;
+  int get superBoostersUsedThisSession => _superBoostersUsedThisSession;
   int get activeAdBoosts => _activeAdBoosts;
   int get activeReferrals => _activeReferrals;
   int get totalReferrals => _totalReferrals;
@@ -65,6 +67,7 @@ class MiningProvider with ChangeNotifier {
   // Getter pentru boosterele RĂMASE, calculat pe baza celor folosite și a maximului permis
   // Necesar pentru HomeScreen
   int get boostersRemaining => maxBoostersPerSession - _boostersUsedThisSession;
+  int get superBoostersRemaining => maxBoostersPerSession - _superBoostersUsedThisSession;
 
   // Constants - pot fi ajustate
   static const int maxBoostersPerSession = 10; // Numărul maxim de boostere ce pot fi folosite într-o sesiune
@@ -163,6 +166,7 @@ class MiningProvider with ChangeNotifier {
     _miningRate = 0.20;
     _baseMiningRate = 0.20;
     _boostersUsedThisSession = 0;
+    _superBoostersUsedThisSession = 0;
     _activeAdBoosts = 0;
     _activeReferrals = 0;
     _totalReferrals = 0;
@@ -279,6 +283,7 @@ class MiningProvider with ChangeNotifier {
     _miningRate = 0.20;
     _baseMiningRate = 0.20;
     _boostersUsedThisSession = 0;
+    _superBoostersUsedThisSession = 0;
     _activeAdBoosts = 0;
     _activeReferrals = 0;
     _totalReferrals = 0;
@@ -333,6 +338,10 @@ class MiningProvider with ChangeNotifier {
         // Calculate boosters used from remaining
         int boostersRemainingFromDb = (data['boostersRemaining'] ?? maxBoostersPerSession) as int;
         _boostersUsedThisSession = maxBoostersPerSession - boostersRemainingFromDb;
+        
+        // Calculate SUPER boosters used from remaining (with default for existing users)
+        int superBoostersRemainingFromDb = (data['superBoostersRemaining'] ?? maxBoostersPerSession) as int;
+        _superBoostersUsedThisSession = maxBoostersPerSession - superBoostersRemainingFromDb;
         
         _activeAdBoosts = (data['activeAdBoosts'] ?? 0) as int;
         _activeReferrals = (data['activeReferrals'] ?? 0) as int;
@@ -435,6 +444,7 @@ class MiningProvider with ChangeNotifier {
           'miningRate': _baseMiningRate,
           'baseMiningRate': _baseMiningRate,
           'boostersRemaining': maxBoostersPerSession,
+          'superBoostersRemaining': maxBoostersPerSession,
           'activeAdBoosts': 0,
           'activeReferrals': 0,
           'totalReferrals': 0,
@@ -460,6 +470,7 @@ class MiningProvider with ChangeNotifier {
           debugPrint('⛏️ Session expired. Stopping mining.');
           await stopMining(notify: false);
           _boostersUsedThisSession = 0;
+          _superBoostersUsedThisSession = 0;
           // Don't save again - stopMining already saved with recalculated balance
         }
       }
@@ -500,6 +511,7 @@ class MiningProvider with ChangeNotifier {
       'miningRate': _miningRate,
       'baseMiningRate': _baseMiningRate,
       'boostersRemaining': calculatedBoostersRemaining,
+      'superBoostersRemaining': maxBoostersPerSession - _superBoostersUsedThisSession,
       'activeAdBoosts': _activeAdBoosts,
               'activeReferrals': _activeReferrals,
         'totalReferrals': _totalReferrals,
@@ -598,6 +610,7 @@ class MiningProvider with ChangeNotifier {
     _totalMiningSessions++;
 
     _boostersUsedThisSession = 0;
+    _superBoostersUsedThisSession = 0;
 
     debugPrint('⛏️ Starting mining session for $_currentUserId. Start time: $_sessionStartTime.');
     _calculateMiningRate();
@@ -708,7 +721,8 @@ class MiningProvider with ChangeNotifier {
     
     // CRITICAL FIX: Reset boosters when stopping mining session
     _boostersUsedThisSession = 0;
-    debugPrint('🚀 Boosters reset to 0 when stopping mining session');
+    _superBoostersUsedThisSession = 0;
+    debugPrint('🚀 Boosters and Super Boosters reset to 0 when stopping mining session');
     
     await _saveUserData();
     
@@ -859,6 +873,9 @@ class MiningProvider with ChangeNotifier {
     
     // Add booster bonus (each booster used increases rate by 0.20)
     rate += _boostersUsedThisSession * 0.20; // +0.20 STC/hr per booster used
+    
+    // Add SUPER booster bonus (each super booster used increases rate by 0.40)
+    rate += _superBoostersUsedThisSession * 0.40; // +0.40 STC/hr per SUPER booster used
 
     _miningRate = rate > 0 ? rate : 0.01; // Ensure minimum positive rate
     
@@ -867,6 +884,7 @@ class MiningProvider with ChangeNotifier {
     debugPrint('  - Active referrals: $_activeReferrals (+${_activeReferrals * 0.20})');
     debugPrint('  - Active ad boosts: $_activeAdBoosts (+${_activeAdBoosts * 0.10})');
     debugPrint('  - Boosters used: $_boostersUsedThisSession (+${_boostersUsedThisSession * 0.20})');
+    debugPrint('  - SUPER Boosters used: $_superBoostersUsedThisSession (+${_superBoostersUsedThisSession * 0.40})');
   }
 
   // Utilizează un booster
@@ -914,6 +932,60 @@ class MiningProvider with ChangeNotifier {
     }
     
     debugPrint('✅ Booster applied successfully. New mining rate: $_miningRate STC/hr');
+    notifyListeners();
+  }
+
+  // Folosește un SUPER booster (similar cu booster normal dar +0.40 în loc de +0.20)
+  Future<void> useSuperBooster() async {
+    if (_currentUserId == null) {
+      debugPrint('🚀 Cannot use super booster, no user logged in.');
+      throw Exception('Utilizator neconectat.');
+    }
+
+    if (!isMining) {
+      debugPrint('🚀 Cannot use super booster, mining session not active.');
+      throw Exception('Trebuie să pornești sesiunea de minare pentru a folosi un super booster.');
+    }
+
+    // Super booster disponibil DOAR când boostere normale s-au terminat
+    if (boostersRemaining > 0) {
+      debugPrint('🚀 Cannot use super booster, normal boosters still available.');
+      throw Exception('Folosește mai întâi toate boosterele normale!');
+    }
+
+    if (superBoostersRemaining <= 0) {
+      debugPrint('🚀 No super boosters left to use. Super boosters used: $_superBoostersUsedThisSession');
+      throw Exception('Nu mai ai super boostere disponibile în această sesiune.');
+    }
+
+    debugPrint('🚀 Using SUPER booster for user: $_currentUserId');
+    
+    // Increment super boosters used
+    _superBoostersUsedThisSession++;
+    _lastBoosterTime = DateTime.now();
+    
+    debugPrint('🚀 SUPER Booster used. Super boosters used this session: $_superBoostersUsedThisSession. Super boosters remaining: $superBoostersRemaining.');
+
+    // Recalculate mining rate with new super booster
+    _calculateMiningRate();
+    
+    // Save updated data
+    await _saveUserData();
+    
+    // Send notification for super booster use
+    try {
+      await _notificationsService.addNotification(
+        title: 'Super Booster Used!',
+        message: 'Your mining rate has increased significantly! You are now earning much more STC.',
+        type: 'super_booster',
+        icon: 'rocket',
+        color: Colors.red,
+      );
+    } catch (e) {
+      debugPrint('⚠️ Failed to send super booster notification: $e');
+    }
+
+    debugPrint('✅ SUPER Booster applied successfully. New mining rate: $_miningRate STC/hr');
     notifyListeners();
   }
 
@@ -1040,6 +1112,10 @@ class MiningProvider with ChangeNotifier {
         int boostersRemainingFromDb = (data['boostersRemaining'] ?? maxBoostersPerSession) as int;
         _boostersUsedThisSession = maxBoostersPerSession - boostersRemainingFromDb;
         
+        // Calculate SUPER boosters used from remaining (with default for existing users)
+        int superBoostersRemainingFromDb = (data['superBoostersRemaining'] ?? maxBoostersPerSession) as int;
+        _superBoostersUsedThisSession = maxBoostersPerSession - superBoostersRemainingFromDb;
+        
         _activeAdBoosts = (data['activeAdBoosts'] ?? 0) as int;
         _activeReferrals = (data['activeReferrals'] ?? 0) as int;
         _totalReferrals = (data['totalReferrals'] ?? 0) as int;
@@ -1138,6 +1214,10 @@ class MiningProvider with ChangeNotifier {
         
         int boostersRemainingFromDb = (data['boostersRemaining'] ?? maxBoostersPerSession) as int;
         _boostersUsedThisSession = maxBoostersPerSession - boostersRemainingFromDb;
+        
+        // Calculate SUPER boosters used from remaining (with default for existing users)
+        int superBoostersRemainingFromDb = (data['superBoostersRemaining'] ?? maxBoostersPerSession) as int;
+        _superBoostersUsedThisSession = maxBoostersPerSession - superBoostersRemainingFromDb;
         
         _activeAdBoosts = (data['activeAdBoosts'] ?? 0) as int;
         _activeReferrals = (data['activeReferrals'] ?? 0) as int;

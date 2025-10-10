@@ -688,6 +688,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       {'code': 'AE', 'flag': '🇦🇪', 'dialCode': '+971', 'format': '5X XXX XXXX'},
       {'code': 'AR', 'flag': '🇦🇷', 'dialCode': '+54', 'format': '9XX XXX XXXX'},
       {'code': 'AT', 'flag': '🇦🇹', 'dialCode': '+43', 'format': '6XX XXX XXX'},
+      {'code': 'BD', 'flag': '🇧🇩', 'dialCode': '+880', 'format': '1XXX-XXXXXX'},
       {'code': 'AU', 'flag': '🇦🇺', 'dialCode': '+61', 'format': '04XX XXX XXX'},
       {'code': 'BE', 'flag': '🇧🇪', 'dialCode': '+32', 'format': '4XX XXX XXX'},
       {'code': 'BG', 'flag': '🇧🇬', 'dialCode': '+359', 'format': '8XX XXX XXX'},

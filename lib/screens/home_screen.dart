@@ -274,6 +274,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           _buildBoosterSection(provider),
                           const SizedBox(height: 24),
                           
+                          // Super Booster Section
+                          _buildSuperBoosterSection(provider),
+                          const SizedBox(height: 24),
+                          
                           // Referral Section
                           _buildReferralSection(provider),
                           const SizedBox(height: 24),
@@ -633,6 +637,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Text(
+            '+ 2 STC/hr MINING RATE',
+            style: TextStyle(
+              color: Colors.orange,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -663,6 +676,107 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 child: const Text(
                   'BOOST',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuperBoosterSection(MiningProvider provider) {
+    // Super booster disponibil DOAR când boostere normale s-au terminat
+    final isSuperBoosterUnlocked = provider.boostersRemaining == 0;
+    final canUseSuperBooster = isSuperBoosterUnlocked && provider.superBoostersRemaining > 0 && _canUseBooster(provider);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: canUseSuperBooster ? Colors.red : (isSuperBoosterUnlocked ? Colors.red.withOpacity(0.3) : Colors.grey.withOpacity(0.3)),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'SUPER BOOSTER',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: canUseSuperBooster ? Colors.red : Colors.grey,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  canUseSuperBooster ? 'AVAILABLE' : (isSuperBoosterUnlocked ? _getBoosterCooldownText(provider) : 'LOCKED'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '+ 4 STC/hr MINING RATE',
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isSuperBoosterUnlocked 
+                        ? 'Super Boosters: ${provider.superBoostersRemaining}/10' 
+                        : 'Unlock by using all normal boosters',
+                      style: TextStyle(
+                        color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton(
+                onPressed: canUseSuperBooster ? () => _useSuperBooster(provider) : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: canUseSuperBooster ? Colors.red : Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'SUPER BOOST',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
@@ -888,6 +1002,87 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return '${remainingSeconds}s';
   }
 
+  Future<void> _useSuperBooster(MiningProvider provider) async {
+    // Check if mining is active BEFORE showing ad
+    if (!provider.isMining) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Start mining first to use super boosters!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Provider.of<ThemeProvider>(context, listen: false).isDarkMode ? Colors.black : Colors.white,
+              ),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return; // Exit early - don't show ad
+    }
+    
+    // Show rewarded ad for SUPER booster (ads already preloaded in initState)
+    AdMobService.showRewardedAdForBooster(
+      onRewarded: () async {
+        try {
+          await provider.useSuperBooster();
+          // Reload ad for next use
+          _loadAds();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Super Booster activated! +0.40 STC/hr',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Provider.of<ThemeProvider>(context, listen: false).isDarkMode ? Colors.black : Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  e.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+      onFailed: () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Ad not available. Please try again later.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      },
+    );
+  }
+
   Future<void> _useBooster(MiningProvider provider) async {
     // Check if mining is active BEFORE showing ad
     if (!provider.isMining) {
@@ -910,12 +1105,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return; // Exit early - don't show ad
     }
     
-    // Reload ads if needed and show rewarded ad for booster
-    _loadAds(); // Reload ads before showing
+    // Show rewarded ad for booster (ads already preloaded in initState)
     AdMobService.showRewardedAdForBooster(
       onRewarded: () async {
         try {
           await provider.useBooster();
+          // Reload ad for next use
+          _loadAds();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
