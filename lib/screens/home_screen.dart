@@ -20,7 +20,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   Timer? _cooldownTimer;
   late AnimationController _rotationController;
   late AnimationController _pulseController;
@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Add lifecycle observer
     _startCooldownTimer();
     _rotationController = AnimationController(
       duration: const Duration(seconds: 3),
@@ -71,11 +72,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Remove lifecycle observer
     _cooldownTimer?.cancel();
     _adminTapTimer?.cancel();
     _rotationController.dispose();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When user returns to app after watching ad
+    if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        setState(() {
+          // Force rebuild to show cooldown timer
+        });
+      }
+    }
   }
 
   // Admin access function
@@ -621,13 +635,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
                   color: canUse ? Colors.orange : Colors.grey,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  canUse ? 'AVAILABLE' : _getBoosterCooldownText(provider),
+                  provider.boostersRemaining == 0
+                    ? 'AVAILABLE 0/10'
+                    : (_getBoosterCooldownText(provider) != 'AVAILABLE' 
+                        ? _getBoosterCooldownText(provider)
+                        : 'AVAILABLE ${provider.boostersRemaining}/10'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -637,51 +655,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            '+ 2 STC/hr MINING RATE',
-            style: TextStyle(
-              color: Colors.orange,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          const SizedBox(height: 16),
+          Center(
+            child: Text(
+              '+ 2 STC/hr MINING RATE',
+              style: TextStyle(
+                color: Colors.orange,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Boosters remaining: ${provider.boostersRemaining}/10',
-                      style: TextStyle(
-                        color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: canUse ? () => _useBooster(provider) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canUse ? Colors.orange : Colors.grey[400],
+                foregroundColor: canUse ? Colors.white : Colors.grey[700],
+                disabledBackgroundColor: Colors.grey[400],
+                disabledForegroundColor: Colors.grey[700],
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: canUse ? () => _useBooster(provider) : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: canUse ? Colors.orange : Colors.grey,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'BOOST',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
+              child: Text(
+                provider.boostersRemaining > 0 ? 'L A U N C H' : 'L A N D E D',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  letterSpacing: 2,
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -720,13 +728,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
                   color: canUseSuperBooster ? Colors.red : Colors.grey,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  canUseSuperBooster ? 'AVAILABLE' : (isSuperBoosterUnlocked ? _getBoosterCooldownText(provider) : 'LOCKED'),
+                  !isSuperBoosterUnlocked 
+                    ? 'LOCKED'
+                    : (_getBoosterCooldownText(provider) != 'AVAILABLE'
+                        ? _getBoosterCooldownText(provider)
+                        : 'AVAILABLE ${provider.superBoostersRemaining}/10'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -736,53 +748,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            '+ 4 STC/hr MINING RATE',
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          const SizedBox(height: 16),
+          Center(
+            child: Text(
+              '+ 4 STC/hr MINING RATE',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isSuperBoosterUnlocked 
-                        ? 'Super Boosters: ${provider.superBoostersRemaining}/10' 
-                        : 'Unlock by using all normal boosters',
-                      style: TextStyle(
-                        color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: canUseSuperBooster ? () => _useSuperBooster(provider) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canUseSuperBooster ? Colors.red : Colors.grey[400],
+                foregroundColor: canUseSuperBooster ? Colors.white : Colors.grey[700],
+                disabledBackgroundColor: Colors.grey[400],
+                disabledForegroundColor: Colors.grey[700],
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: canUseSuperBooster ? () => _useSuperBooster(provider) : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: canUseSuperBooster ? Colors.red : Colors.grey,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'SUPER BOOST',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
+              child: Text(
+                isSuperBoosterUnlocked 
+                  ? (provider.superBoostersRemaining > 0 ? 'L A U N C H' : 'L A N D E D')
+                  : 'L O C K E D',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  letterSpacing: 2,
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -1080,6 +1082,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           );
         }
       },
+      onAdDismissed: () {
+        // Start cooldown WHEN USER RETURNS TO APP (after closing ad)
+        provider.setLastBoosterTime();
+        print('⏱️ SUPER Booster cooldown started when user returned to app');
+      },
     );
   }
 
@@ -1160,6 +1167,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           );
         }
+      },
+      onAdDismissed: () {
+        // Start cooldown WHEN USER RETURNS TO APP (after closing ad)
+        provider.setLastBoosterTime();
+        print('⏱️ Booster cooldown started when user returned to app');
       },
     );
   }

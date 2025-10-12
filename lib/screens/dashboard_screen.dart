@@ -131,7 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Expanded(
               child: _buildStatCard(
                 'Boosters Used',
-                '${provider.boostersUsedThisSession}/10',
+                '${provider.boostersUsedThisSession + provider.superBoostersUsedThisSession}/20',
                 Icons.flash_on,
                 Colors.orange,
               ),
@@ -245,6 +245,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildMiningStat('Base Rate', '0.20 STC/hr', Colors.green),
           const SizedBox(height: 8),
           _buildMiningStat('Booster Bonus', '+${(provider.boostersUsedThisSession * 0.20).toStringAsFixed(2)} STC/hr', Colors.orange),
+          const SizedBox(height: 8),
+          _buildMiningStat('Super Booster Bonus', '+${(provider.superBoostersUsedThisSession * 0.40).toStringAsFixed(2)} STC/hr', Colors.red),
           const SizedBox(height: 8),
           _buildMiningStat('Referral Bonus', '+${(provider.activeReferrals * 0.20).toStringAsFixed(2)} STC/hr', Colors.purple),
           const SizedBox(height: 16),

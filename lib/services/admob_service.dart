@@ -103,11 +103,16 @@ class AdMobService {
   static Future<void> showRewardedAdForBooster({
     required Function() onRewarded,
     required Function() onFailed,
+    Function()? onAdDismissed,
   }) async {
     if (_rewardedAd != null) {
       print('🔄 Showing rewarded ad for booster');
       _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdDismissedFullScreenContent: (ad) {
+          // Called when user closes ad (presses back to return to app)
+          if (onAdDismissed != null) {
+            onAdDismissed();
+          }
           ad.dispose();
           _rewardedAd = null;
           // Load next ad

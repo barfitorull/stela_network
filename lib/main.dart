@@ -13,6 +13,7 @@ import 'screens/main_tabs.dart';
 import 'services/admob_service.dart';
 import 'services/notification_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 // Simple class to hold auth result for ProxyProvider
 class AuthResult {
@@ -26,6 +27,61 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Handling a background message: ${message.messageId}');
   print('Message data: ${message.data}');
   print('Message notification: ${message.notification?.title}');
+}
+
+// Request consent info (GDPR, CCPA, ATT) using UMP SDK
+Future<void> requestConsentInfo() async {
+  try {
+    final params = ConsentRequestParameters();
+    
+    ConsentInformation.instance.requestConsentInfoUpdate(
+      params,
+      () async {
+        print('📋 Consent info updated');
+        
+        // Check if consent form is available
+        if (await ConsentInformation.instance.isConsentFormAvailable()) {
+          print('📋 Consent form available, loading...');
+          loadConsentForm();
+        } else {
+          print('📋 No consent form needed for this user');
+        }
+      },
+      (FormError error) {
+        print('📋 Consent info update error: ${error.message}');
+      },
+    );
+  } catch (e) {
+    print('📋 Error requesting consent info: $e');
+  }
+}
+
+// Load and show consent form if needed
+void loadConsentForm() {
+  try {
+    ConsentForm.loadConsentForm(
+      (ConsentForm consentForm) async {
+        var status = await ConsentInformation.instance.getConsentStatus();
+        print('📋 Consent status: $status');
+        
+        if (status == ConsentStatus.required) {
+          print('📋 Showing consent form');
+          consentForm.show((FormError? formError) {
+            if (formError != null) {
+              print('📋 Form show error: ${formError.message}');
+            }
+            // Reload form in case consent status changed
+            loadConsentForm();
+          });
+        }
+      },
+      (FormError formError) {
+        print('📋 Consent form load error: ${formError.message}');
+      },
+    );
+  } catch (e) {
+    print('📋 Error loading consent form: $e');
+  }
 }
 
 // Check for app updates function with UI
@@ -72,6 +128,9 @@ void main() async {
   
   // Set background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // Request consent info (GDPR, CCPA, ATT) BEFORE initializing AdMob
+  await requestConsentInfo();
 
   // Initialize AdMob
   await AdMobService.initialize();

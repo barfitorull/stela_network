@@ -688,8 +688,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       {'code': 'AE', 'flag': '🇦🇪', 'dialCode': '+971', 'format': '5X XXX XXXX'},
       {'code': 'AR', 'flag': '🇦🇷', 'dialCode': '+54', 'format': '9XX XXX XXXX'},
       {'code': 'AT', 'flag': '🇦🇹', 'dialCode': '+43', 'format': '6XX XXX XXX'},
-      {'code': 'BD', 'flag': '🇧🇩', 'dialCode': '+880', 'format': '1XXX-XXXXXX'},
       {'code': 'AU', 'flag': '🇦🇺', 'dialCode': '+61', 'format': '04XX XXX XXX'},
+      {'code': 'BD', 'flag': '🇧🇩', 'dialCode': '+880', 'format': '1XXX-XXXXXX'},
       {'code': 'BE', 'flag': '🇧🇪', 'dialCode': '+32', 'format': '4XX XXX XXX'},
       {'code': 'BG', 'flag': '🇧🇬', 'dialCode': '+359', 'format': '8XX XXX XXX'},
       {'code': 'BR', 'flag': '🇧🇷', 'dialCode': '+55', 'format': '(11) 9XXXX-XXXX'},
@@ -739,9 +739,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       {'code': 'ZA', 'flag': '🇿🇦', 'dialCode': '+27', 'format': '7X XXX XXXX'},
     ];
     
-    String selectedCountry = 'RO';
-    String selectedDialCode = '+40';
-    String selectedFormat = '07XX XXX XXX';
+    String selectedCountry = 'US';
+    String selectedDialCode = '+1';
+    String selectedFormat = '(XXX) XXX-XXXX';
 
     showDialog(
       context: context,

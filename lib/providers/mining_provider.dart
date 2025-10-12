@@ -908,7 +908,7 @@ class MiningProvider with ChangeNotifier {
     
     // Increment boosters used
     _boostersUsedThisSession++;
-    _lastBoosterTime = DateTime.now();
+    // Note: _lastBoosterTime is set in the UI after ad is watched, not here
     
     debugPrint('🚀 Booster used. Boosters used this session: $_boostersUsedThisSession. Boosters remaining: $boostersRemaining.');
 
@@ -962,7 +962,7 @@ class MiningProvider with ChangeNotifier {
     
     // Increment super boosters used
     _superBoostersUsedThisSession++;
-    _lastBoosterTime = DateTime.now();
+    // Note: _lastBoosterTime is set in the UI after ad is watched, not here
     
     debugPrint('🚀 SUPER Booster used. Super boosters used this session: $_superBoostersUsedThisSession. Super boosters remaining: $superBoostersRemaining.');
 
@@ -987,6 +987,13 @@ class MiningProvider with ChangeNotifier {
 
     debugPrint('✅ SUPER Booster applied successfully. New mining rate: $_miningRate STC/hr');
     notifyListeners();
+  }
+
+  // Setează timestamp-ul pentru cooldown (apelat din UI după vizionarea reclamei)
+  void setLastBoosterTime() {
+    _lastBoosterTime = DateTime.now();
+    notifyListeners();
+    debugPrint('⏱️ Cooldown started at: $_lastBoosterTime');
   }
 
   // Adaugă un cod de referral (folosit de un utilizator nou pentru a indica cine l-a invitat)
