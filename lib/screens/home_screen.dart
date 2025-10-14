@@ -292,6 +292,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                           _buildSuperBoosterSection(provider),
                           const SizedBox(height: 24),
                           
+                          // Banner Section
+                          _buildBannerSection(),
+                          const SizedBox(height: 24),
+                          
                           // Referral Section
                           _buildReferralSection(provider),
                           const SizedBox(height: 24),
@@ -787,6 +791,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBannerSection() {
+    return GestureDetector(
+      onTap: () async {
+        // Open website when banner is tapped
+        final Uri url = Uri.parse('https://stela.network');
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      },
+      child: Container(
+        width: double.infinity,
+        height: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.asset(
+            'assets/banner_homepage.jpg',
+            width: double.infinity,
+            height: 100,
+            fit: BoxFit.fitWidth,
+          ),
+        ),
       ),
     );
   }
